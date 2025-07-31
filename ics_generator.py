@@ -91,6 +91,9 @@ class ICSGenerator:
         event.add("dtstart", start_dt)
         event.add("dtend", end_dt)
         event.add("description", event_description)
+        # Add location to the event from config
+        if "physical_address" in self.calendar_config:
+            event.add("location", self.calendar_config["physical_address"])
 
         # Add alarm reminder using VALARM subcomponent
         from icalendar import Alarm

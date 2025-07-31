@@ -18,26 +18,26 @@ duty_times:
 # Calendar content customization
 calendar:
   # Main calendar title template (use {person} for person name, {location} for location)
-  title_template: "{location}值班 - {person}"
+  title_template: "{location}值班"
   # Event title template
-  event_title_template: "{duty_type} - {location} ({person})"
+  event_title_template: "{duty_type} - {location}"
   # Event description template
   event_description_template: |
     {duty_type} - {location}
-    負責人員: {person}
     日期: {date}
     時間: {start_time} - {end_time}
 
     請準時到崗，注意交接事項。
   # Alarm reminder message
   alarm_message_template: "提醒：您的{location}{duty_type}將在30分鐘後開始！"
+  # Physical address for calendar events
+  physical_address: "11209台北市北投區立德路125號"
 # CSV data organization
 csv_format:
   # How is your data organized?
   # "columns": Days are in columns (A1=day1, B1=day2, C1=day3...)
   # "rows": Days are in rows (A1=day1, A2=day2, A3=day3...)
   orientation: "rows"
-
 # Location mapping based on CSV structure
 locations:
   # Column-based location mapping (0-based column index)

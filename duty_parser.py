@@ -58,8 +58,8 @@ class DutyParser:
                     # Clean and validate cell content
                     cell_clean = cell.strip() if cell else ""
 
-                    # Skip empty cells, whitespace, or non-alphabetic characters
-                    if not cell_clean or not cell_clean.replace(" ", "").isalpha():
+                    # Skip empty cells or cells with no alphabetic characters
+                    if not cell_clean or not any(c.isalpha() for c in cell_clean):
                         continue
 
                     # Get location for this column (Column A = 0, Column B = 1, etc.)
@@ -67,21 +67,19 @@ class DutyParser:
                         col_idx, self.location_config.get("default", "一般病房")
                     )
 
-                    # Normalize person identifier (convert to lowercase, take first letter if multiple chars)
-                    person = cell_clean.lower()
-                    if len(person) > 1:
-                        # If multiple characters, take the first alphabetic character
-                        person = next((c for c in person if c.isalpha()), person[0])
+                    # Parse multiple people in the same cell (e.g., "a/b", "a,b", "a b")
+                    people = self._parse_multiple_people(cell_clean)
 
-                    # Create duty assignment with location info
-                    assignment = DutyAssignment(
-                        day=day, location=location, row_index=row_idx
-                    )
+                    # Create duty assignment for each person
+                    for person in people:
+                        assignment = DutyAssignment(
+                            day=day, location=location, row_index=row_idx
+                        )
 
-                    # Add this assignment to the person's duty list
-                    if person not in duty_schedule:
-                        duty_schedule[person] = []
-                    duty_schedule[person].append(assignment)
+                        # Add this assignment to the person's duty list
+                        if person not in duty_schedule:
+                            duty_schedule[person] = []
+                        duty_schedule[person].append(assignment)
 
         else:
             # Column-based: Each column represents a day (original logic)
@@ -99,8 +97,8 @@ class DutyParser:
                     # Clean and validate cell content
                     cell_clean = cell.strip() if cell else ""
 
-                    # Skip empty cells, whitespace, or non-alphabetic characters
-                    if not cell_clean or not cell_clean.replace(" ", "").isalpha():
+                    # Skip empty cells or cells with no alphabetic characters
+                    if not cell_clean or not any(c.isalpha() for c in cell_clean):
                         continue
 
                     # Day number is column index + 1 (0-based to 1-based)
@@ -115,23 +113,61 @@ class DutyParser:
                         col_idx, self.location_config.get("default", "一般病房")
                     )
 
-                    # Normalize person identifier (convert to lowercase, take first letter if multiple chars)
-                    person = cell_clean.lower()
-                    if len(person) > 1:
-                        # If multiple characters, take the first alphabetic character
-                        person = next((c for c in person if c.isalpha()), person[0])
+                    # Parse multiple people in the same cell (e.g., "a/b", "a,b", "a b")
+                    people = self._parse_multiple_people(cell_clean)
 
-                    # Create duty assignment with location info
-                    assignment = DutyAssignment(
-                        day=day, location=location, row_index=row_idx
-                    )
+                    # Create duty assignment for each person
+                    for person in people:
+                        assignment = DutyAssignment(
+                            day=day, location=location, row_index=row_idx
+                        )
 
-                    # Add this assignment to the person's duty list
-                    if person not in duty_schedule:
-                        duty_schedule[person] = []
-                    duty_schedule[person].append(assignment)
+                        # Add this assignment to the person's duty list
+                        if person not in duty_schedule:
+                            duty_schedule[person] = []
+                        duty_schedule[person].append(assignment)
 
         return duty_schedule
+
+    def _parse_multiple_people(self, cell_content: str) -> List[str]:
+        """
+        Parse a cell that may contain multiple people separated by various delimiters.
+
+        Args:
+            cell_content: Raw cell content (e.g., "a/b", "a,b", "a b", "a")
+
+        Returns:
+            List of normalized person identifiers (lowercase single letters)
+        """
+        import re
+
+        # Common separators: /, ,, space, &, +, -
+        separators = r"[/,\s&+\-]+"
+
+        # Split by separators and clean each part
+        parts = re.split(separators, cell_content.strip())
+
+        people = []
+        for part in parts:
+            part = part.strip()
+            if not part:
+                continue
+
+            # Extract first alphabetic character and normalize to lowercase
+            for char in part:
+                if char.isalpha():
+                    people.append(char.lower())
+                    break  # Only take the first alphabetic char from each part
+
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_people = []
+        for person in people:
+            if person not in seen:
+                seen.add(person)
+                unique_people.append(person)
+
+        return unique_people
 
     def is_weekend(self, day: int) -> bool:
         """
